@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken'); // FIREBASE_REPLACE: Remove later.
-const User = require('../models/User');
+const jwt = require('jsonwebtoken'); 
+const User = require('../models/User'); // first create user model if not created yet
 
 const protect = async (req, res, next) => {
     let token;
@@ -8,21 +8,11 @@ const protect = async (req, res, next) => {
     if (req.cookies.token) {
         try {
             token = req.cookies.token;
-
-            // 1. Verify the token
-            // FIREBASE_REPLACE_START: 
-            // With Firebase, you will usually get the token from 'req.headers.authorization' (Bearer token).
-            // You will replace jwt.verify() with: 
-            // const decodedToken = await admin.auth().verifyIdToken(token);
+            
             const decoded = jwt.verify(token, 'YOUR_SECRET_KEY_HERE_123'); 
-            // FIREBASE_REPLACE_END
-
-            // 2. Get user from the database
-            // FIREBASE_REPLACE_START:
-            // You will likely search by 'firebaseUid' instead of MongoDB '_id'.
-            // req.user = await User.findOne({ firebaseUid: decoded.uid }).select('-password');
+            
             req.user = await User.findById(decoded.id).select('-password');
-            // FIREBASE_REPLACE_END
+           
 
             next(); // Success! Move to the controller (e.g., upvoteVideo)
         } catch (error) {
@@ -36,13 +26,14 @@ const protect = async (req, res, next) => {
     }
 };
 
-const admin = (req, res, next) => {
-    if (req.user && req.user.role === 'admin') {
-        next(); // User is admin, proceed!
-    } else {
-        res.status(403).json({ message: 'Not authorized as an admin' });
-    }
-};
+// (Optional)
+// const admin = (req, res, next) => {
+//     if (req.user && req.user.role === 'admin') {
+//         next(); // User is admin, proceed!
+//     } else {
+//         res.status(403).json({ message: 'Not authorized as an admin' });
+//     }
+// };
 
-
-module.exports = { protect, admin };
+module.exports = { protect };
+// module.exports = { protect, admin };
