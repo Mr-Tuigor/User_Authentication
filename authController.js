@@ -1,11 +1,9 @@
-const User = require('../models/User');
-const bcrypt = require('bcrypt'); // FIREBASE_REPLACE: Remove later
-const jwt = require('jsonwebtoken'); // FIREBASE_REPLACE: Remove later
+const User = require('../models/User'); // first need to create a user model if not create yet
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 // Helper to set Cookie & Send Response
 const sendTokenResponse = (user, statusCode, res) => {
-
-
     // Create token
     const token = jwt.sign({ id: user._id }, 'YOUR_SECRET_KEY_HERE_123', {
         expiresIn: '30d'
@@ -13,36 +11,27 @@ const sendTokenResponse = (user, statusCode, res) => {
 
     // Cookie options
     const options = {
-        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        // Uncomment below line if you need to keep the 30 days expiry
+        // expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         httpOnly: true, // Security: Client-side JS cannot access this cookie (prevents XSS)
         secure: false,
         sameSite: 'lax'
     };
 
 
-    // FIREBASE_REPLACE_START: 
-    // In Firebase, the "Client SDK" (React side) handles persistence automatically.
-    // You won't need to set cookies manually on the server like this.
-    // The browser will stay logged in via Firebase's internal storage (IndexedDB).
+
         res.status(statusCode)
-        .cookie('token', token, options) // This sets the cookie in the browser
+        .cookie('token', token, options) 
         .json({
-            _id: user._id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            university: user.university,
-            branch: user.branch,
-            semester: user.semester
-            // We don't send the token in JSON anymore; it's in the cookie!
+            sucess: true
         });
-    // FIREBASE_REPLACE_END
+    
 };
 
-// @desc    Register a new user
+// Register a new user
 const registerUser = async (req, res) => {
     try {
-        const { username, email, password, university, branch, semester } = req.body;
+        const { username, email, password } = req.body;
 
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -56,12 +45,9 @@ const registerUser = async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            university,
-            branch,
-            semester
         });
 
-        // Use the helper to send cookie
+        // send cookie
         sendTokenResponse(user, 201, res);
 
     } catch (error) {
@@ -69,7 +55,7 @@ const registerUser = async (req, res) => {
     }
 };
 
-// @desc    Login user
+// Login user
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -86,8 +72,8 @@ const loginUser = async (req, res) => {
     }
 };
 
-// @desc    Logout user (Clear cookie)
-// @route   GET /api/auth/logout
+// Logout user (Clear cookie)
+// GET /api/auth/logout
 const logoutUser = async (req, res) => {
     // FIREBASE_REPLACE: Firebase logout is handled on the frontend (firebase.auth().signOut())
     res.cookie('token', 'none', {
@@ -108,11 +94,9 @@ const updateUserProfile = async (req, res) => {
             // Update fields if they are provided in the body, otherwise keep old ones
             user.username = req.body.username || user.username;
             user.email = req.body.email || user.email;
-            user.university = req.body.university || user.university;
-            user.branch = req.body.branch || user.branch;
-            user.semester = req.body.semester || user.semester;
+            
 
-            // If user sends a password, we can hash and update it (Optional feature for later)
+            // If user sends a password, we can hash and update it (Optional)
             // if (req.body.password) {
             //     const salt = await bcrypt.genSalt(10);
             //     user.password = await bcrypt.hash(req.body.password, salt);
@@ -125,10 +109,7 @@ const updateUserProfile = async (req, res) => {
                 _id: updatedUser._id,
                 username: updatedUser.username,
                 email: updatedUser.email,
-                role: updatedUser.role,
-                university: updatedUser.university,
-                branch: updatedUser.branch,
-                semester: updatedUser.semester,
+                
             });
         } else {
             res.status(404).json({ message: "User not found" });
